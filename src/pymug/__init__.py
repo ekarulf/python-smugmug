@@ -1,0 +1,1 @@
+from pymug.smugmug import SmugMugClient, SmugMugError
