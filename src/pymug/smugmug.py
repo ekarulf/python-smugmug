@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2009 Erik Karulf <erik@karulf.com> - MIT License
 __version__ = "$Rev$"
 
 API_VERSION='1.2.2'
 API_DOMAIN='api.smugmug.com'
+API_KEY='WqITE8jW2WvhM9ahx09J8i30PMIwFgI3' # Pymug - Public API Key
 UPLOAD_URL='http://upload.smugmug.com/photos/xmlrawadd.mg'
 USER_AGENT='%s/%s +%s' % ('Pymug', '0.1-dev', 'http://www.fort-awesome.net/wiki/Pymug')
 
@@ -61,7 +63,7 @@ class SmugMugMethod(object):
         return self._request_handler(self._name, kwargs)
 
 class SmugMugClient(object):
-    def __init__(self, api_key, use_ssl=True, api_version=API_VERSION):
+    def __init__(self, api_key=API_KEY, use_ssl=True, api_version=API_VERSION):
         self.api_key = api_key
         self.api_version = api_version
         self.session_id = None
