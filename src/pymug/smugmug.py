@@ -111,6 +111,7 @@ class SmugMugClient(object):
         """Upload filename to SmugMug"""
         data = open(filename, 'rb').read()
         params = {
+            'Content-Type'      : 'none',
             'Content-Length'    : len(data),
             'Content-MD5'       : hashlib.md5(data).hexdigest(),
             'X-Smug-SessionID'  : self.session_id,
