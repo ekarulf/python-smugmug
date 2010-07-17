@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2009 Erik Karulf <erik@karulf.com> - MIT License
+# Copyright (c) 2009-2010 Erik Karulf <erik@karulf.com> - MIT License
 __version__ = "$Rev$"
 
 API_VERSION='1.2.2'
@@ -23,16 +23,15 @@ except ImportError:
     except ImportError: 
         import django.utils.simplejson as json
 
-class SmugMugError(Exception): 
-    """Represents some error while talking
-    to SmugMug's servers.
-    """
+class SmugMugError(Exception):
+    """Represents an error returned by SmugMug's server."""
     def __init__(self, code, message):
         super(SmugMugError, self).__init__(message)
         self.code = code
         self.message = message
 
-def safe_geturl(request):
+def smugmug_fetch(request):
+    """Fetch URL / request from SmugMug and parse accordingly"""
     if not isinstance(request, urllib2.Request):
         request = urllib2.Request(request)
     request.add_header('User-Agent', USER_AGENT)
@@ -42,11 +41,12 @@ def safe_geturl(request):
         raise SmugMugError(result.get('code', ""), result.get('message', ""))
     return result
 
-def smugmug_request(method, params, api_url="https:///api.smugmug.com/services/api/json/1.2.2/") :
+def smugmug_request(method, params, api_url="https:///api.smugmug.com/services/api/json/1.2.2/"):
+    """Encodes params as into GET request and fetches the resulting URL"""
     paramstrings = [urllib.quote(key)+'='+urllib.quote(str(params[key])) for key in params]
     paramstrings += ['method=' + method]
     url = urlparse.urljoin(api_url, '?' + '&'.join(paramstrings))
-    return safe_geturl(url)
+    return smugmug_fetch(url)
 
 class SmugMugMethod(object):
     def __init__(self, name, prefix=None, request_handler=smugmug_request):
@@ -97,6 +97,7 @@ class SmugMugClient(object):
         elif 'SessionID' not in params and self.session_id is not None:
                 params['SessionID'] = self.session_id
         
+        # Make request
         result = smugmug_request(method, params, api_url=self.api_url)
         
         # Post-processing
@@ -123,5 +124,5 @@ class SmugMugClient(object):
             params["X-Smug-" + key] = value
         
         upload_request = urllib2.Request(UPLOAD_URL, data, params)
-        return safe_geturl(upload_request)
+        return smugmug_fetch(upload_request)
 
