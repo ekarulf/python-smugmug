@@ -30,26 +30,8 @@ class SmugMugError(Exception):
         self.code = code
         self.message = message
 
-def smugmug_fetch(request):
-    """Fetch URL / request from SmugMug and parse accordingly"""
-    if not isinstance(request, urllib2.Request):
-        request = urllib2.Request(request)
-    request.add_header('User-Agent', USER_AGENT)
-    response = urllib2.urlopen(request).read()
-    result = json.loads(response)
-    if result['stat'] != 'ok':
-        raise SmugMugError(result.get('code', ""), result.get('message', ""))
-    return result
-
-def smugmug_request(method, params, api_url="https:///api.smugmug.com/services/api/json/1.2.2/"):
-    """Encodes params as into GET request and fetches the resulting URL"""
-    paramstrings = [urllib.quote(key)+'='+urllib.quote(str(params[key])) for key in params]
-    paramstrings += ['method=' + method]
-    url = urlparse.urljoin(api_url, '?' + '&'.join(paramstrings))
-    return smugmug_fetch(url)
-
 class SmugMugMethod(object):
-    def __init__(self, name, prefix=None, request_handler=smugmug_request):
+    def __init__(self, name, request_handler, prefix=None):
         if prefix:
             self._name = "%s.%s" % (prefix, name)
         else:
@@ -57,7 +39,7 @@ class SmugMugMethod(object):
         self._request_handler = request_handler
     def __getattr__(self, name):
         if name not in self.__dict__:
-            self.__dict__[name] = SmugMugMethod(name, self._name, self._request_handler)
+            self.__dict__[name] = SmugMugMethod(name, self._request_handler, self._name)
         return self.__dict__[name]
     def __call__(self, **kwargs):
         return self._request_handler(self._name, kwargs)
@@ -67,7 +49,7 @@ class SmugMugClient(object):
         self.api_key = api_key
         self.api_version = api_version
         self.session_id = None
-        self.smugmug = SmugMugMethod('smugmug', request_handler=self.request)
+        self.smugmug = SmugMugMethod('smugmug', self.request)
         # Build the URL
         if use_ssl:
             protocol = 'https'
@@ -96,9 +78,11 @@ class SmugMugClient(object):
                 params['APIKey'] = self.api_key
         elif 'SessionID' not in params and self.session_id is not None:
                 params['SessionID'] = self.session_id
+        params['method'] = method
         
         # Make request
-        result = smugmug_request(method, params, api_url=self.api_url)
+        url = "?".join((self.api_url, urllib.urlencode(params)))
+        result = self._fetch(url)
         
         # Post-processing
         if login_method:
@@ -124,5 +108,17 @@ class SmugMugClient(object):
             params["X-Smug-" + key] = value
         
         upload_request = urllib2.Request(UPLOAD_URL, data, params)
-        return smugmug_fetch(upload_request)
+        return self._fetch(upload_request)
+    
+    @staticmethod
+    def _fetch(request):
+        """Fetch URL / request from SmugMug and parse accordingly"""
+        if not isinstance(request, urllib2.Request):
+            request = urllib2.Request(request)
+        request.add_header('User-Agent', USER_AGENT)
+        response = urllib2.urlopen(request).read()
+        result = json.loads(response)
+        if result['stat'] != 'ok':
+            raise SmugMugError(result.get('code', ""), result.get('message', ""))
+        return result
 
