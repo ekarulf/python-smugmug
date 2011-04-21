@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2009-2010 Erik Karulf <erik@karulf.com> - MIT License
-__version__ = "$Rev$"
+# Copyright (c) 2009-2011 Erik Karulf <erik@karulf.com> - MIT License
+__version__ = "0.2"
 
 API_VERSION='1.2.2'
 API_DOMAIN='api.smugmug.com'
+API_DOMAIN_SSL='secure.smugmug.com'
 API_KEY='WqITE8jW2WvhM9ahx09J8i30PMIwFgI3' # Pymug - Public API Key
 UPLOAD_URL='http://upload.smugmug.com/photos/xmlrawadd.mg'
-USER_AGENT='%s/%s +%s' % ('Pymug', '0.1-dev', 'http://www.fort-awesome.net/wiki/Pymug')
+USER_AGENT='%s/%s +%s' % ('Pymug', __version__, 'http://www.fort-awesome.net/wiki/Pymug')
 
 ##########
 
@@ -16,10 +17,10 @@ import urlparse
 import hashlib
 
 try: 
-    import json
+    import simplejson as json
 except ImportError:
     try:
-        import simplejson as json
+        import json
     except ImportError: 
         import django.utils.simplejson as json
 
@@ -53,13 +54,15 @@ class SmugMugClient(object):
         # Build the URL
         if use_ssl:
             protocol = 'https'
+            domain   = API_DOMAIN_SSL
         else:
             protocol = 'http'
+            domain   = API_DOMAIN
         if api_version == "1.2.0":
             directory = 'hack'
         else:
             directory = 'services/api'
-        self.api_url = "%s://%s/%s/json/%s/" % (protocol, API_DOMAIN, directory, api_version)
+        self.api_url = "%s://%s/%s/json/%s/" % (protocol, domain, directory, api_version)
 
     
     def request(self, method, kwargs):
